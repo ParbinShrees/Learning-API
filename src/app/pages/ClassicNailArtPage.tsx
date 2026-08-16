@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Phone,
   Mail,
@@ -26,7 +26,13 @@ import {
   Palette,
   CheckCircle2,
   Copy,
-  Info
+  Info,
+  Search,
+  Play,
+  Share2,
+  Gift,
+  Tag,
+  CheckCircle
 } from 'lucide-react';
 
 interface Service {
@@ -53,17 +59,32 @@ interface GalleryItem {
   priceEstimate: string;
 }
 
+interface VideoTutorial {
+  id: string;
+  title: string;
+  duration: string;
+  views: string;
+  thumbnail: string;
+  description: string;
+  tag: string;
+}
+
 export function ClassicNailArtPage() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
   const [activeCategory, setActiveCategory] = useState('All');
   const [activeServiceTab, setActiveServiceTab] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
   const [bookingOpen, setBookingOpen] = useState(false);
   const [selectedGalleryItem, setSelectedGalleryItem] = useState<GalleryItem | null>(null);
+  const [activeVideo, setActiveVideo] = useState<VideoTutorial | null>(null);
   const [likedItems, setLikedItems] = useState<Record<string, boolean>>({});
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Live Studio Open Status
+  const [isOpenNow, setIsOpenNow] = useState(true);
 
   // Live Nail Simulator State
   const [simShape, setSimShape] = useState<'Almond' | 'Coffin' | 'Stiletto' | 'Square' | 'Oval'>('Almond');
@@ -74,7 +95,7 @@ export function ClassicNailArtPage() {
   // Form State
   const [formData, setFormData] = useState({
     service: 'Classic & Russian Manicure',
-    artist: 'Any Available Master Artist',
+    artist: 'Priya Shrestha (Master Artist)',
     date: '2026-08-18',
     time: '11:00 AM',
     name: '',
@@ -85,12 +106,22 @@ export function ClassicNailArtPage() {
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
+    setTimeout(() => setToastMessage(null), 3200);
   };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 30);
     window.addEventListener('scroll', onScroll);
+
+    // Calculate if salon is open (10:00 to 19:30)
+    const now = new Date();
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    const currentMins = hours * 60 + minutes;
+    const openMins = 10 * 60;
+    const closeMins = 19 * 60 + 30;
+    setIsOpenNow(currentMins >= openMins && currentMins <= closeMins);
+
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
@@ -241,6 +272,68 @@ export function ClassicNailArtPage() {
     }
   ];
 
+  const videos: VideoTutorial[] = [
+    {
+      id: 'v1',
+      title: 'Intricate Tribal Geometric Detailing',
+      duration: '4:15',
+      views: '18.4K views',
+      tag: 'Hand-Painted Art',
+      thumbnail: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=800&q=80',
+      description: 'Master nail artist Priya demonstrates razor-thin brush strokes for symmetrical mandala patterns.'
+    },
+    {
+      id: 'v2',
+      title: 'Flawless Glazed Chrome Application',
+      duration: '3:20',
+      views: '29.1K views',
+      tag: 'Technique',
+      thumbnail: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80',
+      description: 'The secret temperature and top coat cure time needed for a reflective glass chrome shine.'
+    },
+    {
+      id: 'v3',
+      title: 'Russian Manicure E-File Cuticle Prep',
+      duration: '5:40',
+      views: '42.6K views',
+      tag: 'Care & Prep',
+      thumbnail: 'https://images.unsplash.com/photo-1632345031435-8727f6897d53?auto=format&fit=crop&w=800&q=80',
+      description: 'How diamond ball and flame bits cleanly lift and buff cuticles without scissors or trauma.'
+    }
+  ];
+
+  const packages = [
+    {
+      title: 'Lakeside Refresh Package',
+      discount: 'Save 20%',
+      price: 'NPR 3,200',
+      original: 'NPR 4,000',
+      includes: ['Classic Russian Manicure', 'Warm Paraffin Hand Spa', 'Solid Gel Polish Finish', 'Botanical Cuticle Oil Bottle']
+    },
+    {
+      title: 'Bridal Couture Glamour Duo',
+      discount: 'Save 25%',
+      price: 'NPR 6,800',
+      original: 'NPR 9,000',
+      includes: ['Full Sculpted Gel Extensions', 'Swarovski & Pearl 3D Accents', 'Luxury Pedicure & Foot Scrub', '1 Free 3-Week Refill Touchup']
+    }
+  ];
+
+  const careTips = [
+    {
+      title: 'First 24 Hours',
+      desc: 'Avoid heavy sauna sessions, scalding hot baths, and harsh cleaning chemicals to let the gel seal completely.'
+    },
+    {
+      title: 'Daily Hydration',
+      desc: 'Apply jojoba or vitamin E cuticle oil twice daily to keep natural nail beds flexible and prevent edge lifting.'
+    },
+    {
+      title: 'Nails Are Jewels, Not Tools',
+      desc: 'Use fingertips or tools to open soda cans and peel labels to preserve apex strength and extension structure.'
+    }
+  ];
+
   const faqs = [
     {
       q: 'What is a Russian Manicure and how does it differ from a standard manicure?',
@@ -285,9 +378,14 @@ export function ClassicNailArtPage() {
     }
   ];
 
-  const filteredServices = activeServiceTab === 'All'
-    ? services
-    : services.filter(s => s.category === activeServiceTab);
+  const filteredServices = useMemo(() => {
+    return services.filter(s => {
+      const matchesCategory = activeServiceTab === 'All' || s.category === activeServiceTab;
+      const matchesSearch = s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            s.description.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesCategory && matchesSearch;
+    });
+  }, [activeServiceTab, searchQuery]);
 
   const filteredGallery = activeCategory === 'All'
     ? gallery
@@ -316,11 +414,11 @@ export function ClassicNailArtPage() {
     setTimeout(() => {
       setBookingSuccess(false);
       setBookingOpen(false);
-    }, 2200);
+    }, 2400);
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF9F6] text-[#222222] font-sans antialiased selection:bg-[#5C3D75] selection:text-white">
+    <div className="min-h-screen bg-[#FAF9F6] text-[#222222] font-sans antialiased selection:bg-[#5C3D75] selection:text-white pb-14 sm:pb-0">
       
       {/* Toast Notification */}
       {toastMessage && (
@@ -330,7 +428,7 @@ export function ClassicNailArtPage() {
         </div>
       )}
 
-      {/* 1. TOP UTILITY BAR (Clean, human, functional) */}
+      {/* 1. TOP UTILITY BAR (Clean, functional, with Live Open Status) */}
       <div className="bg-[#FFFFFF] border-b border-[#EBE7DF] text-[13px] text-[#555555] py-2 px-4 sm:px-8">
         <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3">
           {/* Left: Socials + Phone */}
@@ -363,22 +461,21 @@ export function ClassicNailArtPage() {
             </span>
           </div>
 
-          {/* Right: Location & Opening Info */}
+          {/* Right: Live Open Badge + Location */}
           <div className="flex items-center space-x-4">
+            <div className="flex items-center gap-1.5">
+              <span className={`inline-block w-2 h-2 rounded-full ${isOpenNow ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+              <span className="text-xs font-semibold text-gray-700">
+                {isOpenNow ? 'Open Now (Closes 7:30 PM)' : 'Opens at 10:00 AM'}
+              </span>
+            </div>
+
+            <div className="h-3.5 w-px bg-[#E2DED5]" />
+
             <div className="flex items-center gap-1.5 text-[#666666]">
               <MapPin className="w-3.5 h-3.5 text-[#5C3D75]" />
               <span>Lakeside-6, Pokhara</span>
             </div>
-            <div className="h-3.5 w-px bg-[#E2DED5]" />
-            <button
-              onClick={() => {
-                setFormData(prev => ({ ...prev, service: 'Classic & Russian Manicure' }));
-                setBookingOpen(true);
-              }}
-              className="text-[#5C3D75] hover:underline font-semibold cursor-pointer"
-            >
-              Book an Appointment
-            </button>
           </div>
         </div>
       </div>
@@ -402,12 +499,14 @@ export function ClassicNailArtPage() {
           </a>
 
           {/* Nav Items */}
-          <nav className="hidden lg:flex items-center space-x-7 text-xs font-semibold uppercase tracking-wider text-[#444444]">
+          <nav className="hidden lg:flex items-center space-x-6 text-xs font-semibold uppercase tracking-wider text-[#444444]">
             <a href="#home" className="text-[#5C3D75] hover:text-[#462B5B] transition-colors">Home</a>
             <a href="#services" className="hover:text-[#5C3D75] transition-colors">Services</a>
+            <a href="#packages" className="hover:text-[#5C3D75] transition-colors">Packages</a>
             <a href="#customizer" className="hover:text-[#5C3D75] transition-colors">Customizer</a>
-            <a href="#about" className="hover:text-[#5C3D75] transition-colors">About Us</a>
             <a href="#gallery" className="hover:text-[#5C3D75] transition-colors">Lookbook</a>
+            <a href="#videos" className="hover:text-[#5C3D75] transition-colors">Videos</a>
+            <a href="#about" className="hover:text-[#5C3D75] transition-colors">About Us</a>
             <a href="#faq" className="hover:text-[#5C3D75] transition-colors">FAQ</a>
             <a href="#contact" className="hover:text-[#5C3D75] transition-colors">Contact</a>
           </nav>
@@ -416,7 +515,7 @@ export function ClassicNailArtPage() {
           <div className="hidden sm:flex items-center gap-3">
             <button
               onClick={() => setBookingOpen(true)}
-              className="bg-[#5C3D75] hover:bg-[#4B2F60] text-white text-xs uppercase font-semibold tracking-wider px-5 py-2.5 rounded-full transition-all duration-150 shadow-sm"
+              className="bg-[#5C3D75] hover:bg-[#4B2F60] text-white text-xs uppercase font-semibold tracking-wider px-5 py-2.5 rounded-full transition-all duration-150 shadow-sm cursor-pointer"
             >
               Book Now
             </button>
@@ -437,9 +536,11 @@ export function ClassicNailArtPage() {
           <div className="lg:hidden bg-white border-b border-[#E8E4DC] px-6 py-4 space-y-3 text-sm font-semibold uppercase tracking-wide">
             <a href="#home" onClick={() => setMobileMenu(false)} className="block text-[#5C3D75] py-1">Home</a>
             <a href="#services" onClick={() => setMobileMenu(false)} className="block text-[#444444] hover:text-[#5C3D75] py-1">Services</a>
+            <a href="#packages" onClick={() => setMobileMenu(false)} className="block text-[#444444] hover:text-[#5C3D75] py-1">Packages</a>
             <a href="#customizer" onClick={() => setMobileMenu(false)} className="block text-[#444444] hover:text-[#5C3D75] py-1">Customizer</a>
-            <a href="#about" onClick={() => setMobileMenu(false)} className="block text-[#444444] hover:text-[#5C3D75] py-1">About Us</a>
             <a href="#gallery" onClick={() => setMobileMenu(false)} className="block text-[#444444] hover:text-[#5C3D75] py-1">Lookbook</a>
+            <a href="#videos" onClick={() => setMobileMenu(false)} className="block text-[#444444] hover:text-[#5C3D75] py-1">Videos</a>
+            <a href="#about" onClick={() => setMobileMenu(false)} className="block text-[#444444] hover:text-[#5C3D75] py-1">About Us</a>
             <a href="#faq" onClick={() => setMobileMenu(false)} className="block text-[#444444] hover:text-[#5C3D75] py-1">FAQ</a>
             <a href="#contact" onClick={() => setMobileMenu(false)} className="block text-[#444444] hover:text-[#5C3D75] py-1">Contact</a>
             <button
@@ -531,11 +632,11 @@ export function ClassicNailArtPage() {
         </div>
       </section>
 
-      {/* 4. SERVICES SECTION */}
+      {/* 4. SERVICES SECTION WITH SEARCH & CATEGORY FILTERS */}
       <section id="services" className="py-16 md:py-24 bg-white">
         <div className="max-w-6xl mx-auto px-4 sm:px-8">
           
-          <div className="text-center max-w-xl mx-auto mb-10 space-y-2">
+          <div className="text-center max-w-xl mx-auto mb-8 space-y-2">
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-[#1C1917]">
               Services & Treatments
             </h2>
@@ -543,9 +644,11 @@ export function ClassicNailArtPage() {
             <p className="text-xs sm:text-sm text-[#666666]">
               Thoughtfully curated treatments for healthy, beautifully sculpted nails.
             </p>
+          </div>
 
-            {/* Service Category Filter */}
-            <div className="flex flex-wrap items-center justify-center gap-2 pt-3">
+          {/* Search & Category Filter Bar */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-10 pb-4 border-b border-[#ECE7DC]">
+            <div className="flex flex-wrap items-center gap-2">
               {['All', 'Care', 'Art', 'Extensions', 'Spa'].map(tab => (
                 <button
                   key={tab}
@@ -560,79 +663,156 @@ export function ClassicNailArtPage() {
                 </button>
               ))}
             </div>
+
+            <div className="relative w-full sm:w-64">
+              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
+              <input
+                type="text"
+                placeholder="Search treatments..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-[#DCD6C9] bg-[#FAF9F6] text-xs focus:outline-none focus:border-[#5C3D75]"
+              />
+            </div>
           </div>
 
           {/* Service Cards Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredServices.map((service) => (
-              <div
-                key={service.id}
-                className="bg-[#FAF9F6] rounded-2xl overflow-hidden border border-[#EBE6DC] shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between"
-              >
-                <div>
-                  <div className="relative h-48 overflow-hidden bg-[#ECE8DF]">
-                    <img
-                      src={service.image}
-                      alt={service.title}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute top-2.5 right-2.5 bg-white/90 backdrop-blur-sm px-2.5 py-0.5 rounded-full text-xs font-bold text-[#5C3D75]">
-                      {service.price}
+          {filteredServices.length === 0 ? (
+            <div className="text-center py-12 text-gray-500 text-xs">
+              No services match "{searchQuery}". Try searching for manicure, gel, or spa.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredServices.map((service) => (
+                <div
+                  key={service.id}
+                  className="bg-[#FAF9F6] rounded-2xl overflow-hidden border border-[#EBE6DC] shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="relative h-48 overflow-hidden bg-[#ECE8DF]">
+                      <img
+                        src={service.image}
+                        alt={service.title}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute top-2.5 right-2.5 bg-white/90 backdrop-blur-sm px-2.5 py-0.5 rounded-full text-xs font-bold text-[#5C3D75]">
+                        {service.price}
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="p-5 space-y-2.5">
-                    <div className="flex items-center justify-between text-xs text-[#777777]">
-                      <span className="flex items-center gap-1 font-medium">
-                        <Clock className="w-3 h-3 text-[#5C3D75]" />
-                        {service.duration}
-                      </span>
-                      {service.tag && (
-                        <span className="text-[10px] uppercase font-bold text-[#5C3D75] bg-[#5C3D75]/10 px-2 py-0.5 rounded-full">
-                          {service.tag}
+                    <div className="p-5 space-y-2.5">
+                      <div className="flex items-center justify-between text-xs text-[#777777]">
+                        <span className="flex items-center gap-1 font-medium">
+                          <Clock className="w-3 h-3 text-[#5C3D75]" />
+                          {service.duration}
                         </span>
-                      )}
-                    </div>
+                        {service.tag && (
+                          <span className="text-[10px] uppercase font-bold text-[#5C3D75] bg-[#5C3D75]/10 px-2 py-0.5 rounded-full">
+                            {service.tag}
+                          </span>
+                        )}
+                      </div>
 
-                    <h3 className="font-serif text-base font-bold text-[#1C1917] leading-snug">
-                      {service.title}
-                    </h3>
+                      <h3 className="font-serif text-base font-bold text-[#1C1917] leading-snug">
+                        {service.title}
+                      </h3>
 
-                    <p className="text-xs text-[#666666] leading-relaxed line-clamp-3">
-                      {service.description}
-                    </p>
+                      <p className="text-xs text-[#666666] leading-relaxed line-clamp-3">
+                        {service.description}
+                      </p>
 
-                    <div className="pt-2 border-t border-[#ECE7DC] space-y-1">
-                      {service.highlights.map((h, i) => (
-                        <div key={i} className="flex items-center gap-1.5 text-[11px] text-[#555555]">
-                          <Check className="w-3 h-3 text-emerald-600 shrink-0" />
-                          <span>{h}</span>
-                        </div>
-                      ))}
+                      <div className="pt-2 border-t border-[#ECE7DC] space-y-1">
+                        {service.highlights.map((h, i) => (
+                          <div key={i} className="flex items-center gap-1.5 text-[11px] text-[#555555]">
+                            <Check className="w-3 h-3 text-emerald-600 shrink-0" />
+                            <span>{h}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="p-5 pt-0">
-                  <button
-                    onClick={() => {
-                      setFormData(prev => ({ ...prev, service: service.title }));
-                      setBookingOpen(true);
-                    }}
-                    className="w-full bg-[#5C3D75] hover:bg-[#482F5E] text-white text-xs font-semibold py-2.5 rounded-xl transition-colors text-center"
-                  >
-                    Book This Service
-                  </button>
+                  <div className="p-5 pt-0">
+                    <button
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, service: service.title }));
+                        setBookingOpen(true);
+                      }}
+                      className="w-full bg-[#5C3D75] hover:bg-[#482F5E] text-white text-xs font-semibold py-2.5 rounded-xl transition-colors text-center cursor-pointer"
+                    >
+                      Book This Service
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
         </div>
       </section>
 
-      {/* 5. INTERACTIVE LIVE NAIL CUSTOMIZER / SHADE SIMULATOR */}
-      <section id="customizer" className="py-16 md:py-24 bg-[#F5F2EC] border-y border-[#E6E0D3]">
+      {/* 5. SPECIAL SEASONAL PACKAGES */}
+      <section id="packages" className="py-16 md:py-20 bg-[#F7F5F0] border-y border-[#EAE5DA]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-8">
+          <div className="text-center max-w-xl mx-auto mb-10 space-y-2">
+            <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-800 text-[11px] font-bold">
+              <Gift className="w-3.5 h-3.5" />
+              <span>Curated Bundles</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-serif font-bold text-[#1C1917]">
+              Seasonal Studio Packages
+            </h2>
+            <p className="text-xs sm:text-sm text-[#666666]">
+              Save more by bundling your favorite nail enhancements with relaxing spa rituals.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {packages.map((pkg, idx) => (
+              <div key={idx} className="bg-white p-6 sm:p-7 rounded-2xl border border-[#E5DFD4] shadow-sm flex flex-col justify-between space-y-4">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
+                      {pkg.discount}
+                    </span>
+                    <div className="text-right">
+                      <span className="text-xs text-gray-400 line-through mr-2">{pkg.original}</span>
+                      <span className="font-serif text-xl font-bold text-[#5C3D75]">{pkg.price}</span>
+                    </div>
+                  </div>
+
+                  <h3 className="font-serif text-lg font-bold text-gray-900">{pkg.title}</h3>
+
+                  <div className="space-y-2 pt-2 border-t border-gray-100">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Includes:</span>
+                    <ul className="space-y-1.5">
+                      {pkg.includes.map((inc, i) => (
+                        <li key={i} className="flex items-center gap-2 text-xs text-gray-700">
+                          <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span>{inc}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setFormData(prev => ({ ...prev, service: pkg.title }));
+                    setBookingOpen(true);
+                  }}
+                  className="w-full bg-[#5C3D75] hover:bg-[#472E5E] text-white py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-colors"
+                >
+                  Book Package
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 6. INTERACTIVE LIVE NAIL CUSTOMIZER / SHADE SIMULATOR */}
+      <section id="customizer" className="py-16 md:py-24 bg-white">
         <div className="max-w-6xl mx-auto px-4 sm:px-8">
           
           <div className="text-center max-w-xl mx-auto mb-12 space-y-2">
@@ -648,7 +828,7 @@ export function ClassicNailArtPage() {
             </p>
           </div>
 
-          <div className="bg-white rounded-3xl p-6 sm:p-10 border border-[#E2DBD0] shadow-md grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          <div className="bg-[#FAF9F6] rounded-3xl p-6 sm:p-10 border border-[#E2DBD0] shadow-sm grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             
             {/* Left: Customizer Controls */}
             <div className="lg:col-span-7 space-y-6">
@@ -667,7 +847,7 @@ export function ClassicNailArtPage() {
                       className={`py-2 px-2.5 rounded-xl text-xs font-semibold border transition-all text-center ${
                         simShape === shape
                           ? 'bg-[#5C3D75] text-white border-[#5C3D75] shadow-xs'
-                          : 'bg-[#FAF9F6] text-[#555555] border-[#E5DFD4] hover:border-[#D0C8BC]'
+                          : 'bg-white text-[#555555] border-[#E5DFD4] hover:border-[#D0C8BC]'
                       }`}
                     >
                       {shape}
@@ -690,7 +870,7 @@ export function ClassicNailArtPage() {
                       className={`py-2 px-2.5 rounded-xl text-xs font-semibold border transition-all text-center ${
                         simLength === len
                           ? 'bg-[#5C3D75] text-white border-[#5C3D75] shadow-xs'
-                          : 'bg-[#FAF9F6] text-[#555555] border-[#E5DFD4] hover:border-[#D0C8BC]'
+                          : 'bg-white text-[#555555] border-[#E5DFD4] hover:border-[#D0C8BC]'
                       }`}
                     >
                       {len}
@@ -740,7 +920,7 @@ export function ClassicNailArtPage() {
                       className={`py-2 px-2 rounded-xl text-[11px] font-semibold border transition-all text-center ${
                         simFinish === fin
                           ? 'bg-[#5C3D75] text-white border-[#5C3D75]'
-                          : 'bg-[#FAF9F6] text-[#555555] border-[#E5DFD4] hover:border-[#D0C8BC]'
+                          : 'bg-white text-[#555555] border-[#E5DFD4] hover:border-[#D0C8BC]'
                       }`}
                     >
                       {fin}
@@ -752,7 +932,7 @@ export function ClassicNailArtPage() {
             </div>
 
             {/* Right: Live Preview Box & Summary */}
-            <div className="lg:col-span-5 bg-[#FAF9F6] p-6 rounded-2xl border border-[#E5DFD4] text-center space-y-4">
+            <div className="lg:col-span-5 bg-white p-6 rounded-2xl border border-[#E5DFD4] text-center space-y-4 shadow-xs">
               <span className="text-[10px] font-bold uppercase tracking-widest text-[#5C3D75]">
                 Real-Time Configuration
               </span>
@@ -803,61 +983,8 @@ export function ClassicNailArtPage() {
         </div>
       </section>
 
-      {/* 6. ABOUT US & HYGIENE PROMISE */}
-      <section id="about" className="py-16 md:py-24 bg-[#FAF9F6]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-            
-            <div className="lg:col-span-5">
-              <div className="rounded-2xl overflow-hidden border-4 border-white shadow-md bg-white">
-                <img
-                  src="https://images.unsplash.com/photo-1519014816548-bf5fe059798b?auto=format&fit=crop&w=800&q=80"
-                  alt="Classic Nail Art Studio experience"
-                  className="w-full h-80 object-cover"
-                />
-              </div>
-            </div>
-
-            <div className="lg:col-span-7 space-y-4">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#5C3D75]">
-                About Our Studio
-              </span>
-              <h2 className="text-2xl sm:text-3xl font-serif font-bold text-[#1C1917]">
-                A Peaceful Haven For Thoughtful Nail Care
-              </h2>
-              <p className="text-xs sm:text-sm text-[#555555] leading-relaxed">
-                At <strong>Classic Nail Art</strong>, we believe manicures are more than beauty — they are an act of self-care. Located near the serene lakeside of Pokhara, our studio provides a calm, unhurried atmosphere where every client receives dedicated, one-on-one attention.
-              </p>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                <div className="bg-white p-3.5 rounded-xl border border-[#E5E0D5] flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-[#5C3D75]/10 text-[#5C3D75] shrink-0">
-                    <Shield className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-bold text-[#1C1917]">Autoclave Sterilization</h4>
-                    <p className="text-[11px] text-[#666666] mt-0.5">Medical-grade sterilization for every metal tool.</p>
-                  </div>
-                </div>
-
-                <div className="bg-white p-3.5 rounded-xl border border-[#E5E0D5] flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-[#5C3D75]/10 text-[#5C3D75] shrink-0">
-                    <Sparkles className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-bold text-[#1C1917]">Certified Master Artists</h4>
-                    <p className="text-[11px] text-[#666666] mt-0.5">Over 7 years of specialized Russian manicure experience.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* 7. DESIGN LOOKBOOK & PORTFOLIO */}
-      <section id="gallery" className="py-16 md:py-24 bg-white border-t border-[#EAE5DA]">
+      {/* 7. STUDIO LOOKBOOK & PORTFOLIO */}
+      <section id="gallery" className="py-16 md:py-24 bg-[#F7F5F0] border-t border-[#EAE5DA]">
         <div className="max-w-6xl mx-auto px-4 sm:px-8">
           
           <div className="text-center max-w-xl mx-auto mb-10 space-y-2">
@@ -866,7 +993,7 @@ export function ClassicNailArtPage() {
             </h2>
             <div className="w-12 h-0.5 bg-[#5C3D75] mx-auto rounded-full" />
             <p className="text-xs sm:text-sm text-[#666666]">
-              Click any look to view details and required products.
+              Click any look to view details, duration, and required products.
             </p>
 
             {/* Filter Tabs */}
@@ -878,7 +1005,7 @@ export function ClassicNailArtPage() {
                   className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
                     activeCategory === cat
                       ? 'bg-[#5C3D75] text-white'
-                      : 'bg-[#F2EFE8] text-[#555555] hover:bg-[#EAE5DC]'
+                      : 'bg-white text-[#555555] border border-gray-200 hover:bg-[#EAE5DC]'
                   }`}
                 >
                   {cat}
@@ -891,7 +1018,7 @@ export function ClassicNailArtPage() {
             {filteredGallery.map(item => (
               <div
                 key={item.id}
-                className="group rounded-2xl overflow-hidden bg-[#F7F5F0] border border-[#ECE7DC] shadow-sm flex flex-col cursor-pointer"
+                className="group rounded-2xl overflow-hidden bg-white border border-[#ECE7DC] shadow-sm flex flex-col cursor-pointer hover:shadow-md transition-shadow"
                 onClick={() => setSelectedGalleryItem(item)}
               >
                 <div className="relative h-64 overflow-hidden">
@@ -927,7 +1054,148 @@ export function ClassicNailArtPage() {
         </div>
       </section>
 
-      {/* 8. FREQUENTLY ASKED QUESTIONS (Accordion) */}
+      {/* 8. VIDEO TUTORIALS & ART REELS */}
+      <section id="videos" className="py-16 md:py-24 bg-white border-t border-[#EAE5DA]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-8">
+          <div className="text-center max-w-xl mx-auto mb-12 space-y-2">
+            <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#5C3D75]/10 text-[#5C3D75] text-[11px] font-bold">
+              <Play className="w-3 h-3 fill-current" />
+              <span>Studio Reels & Techniques</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-serif font-bold text-[#1C1917]">
+              Watch Behind The Art
+            </h2>
+            <p className="text-xs sm:text-sm text-[#666666]">
+              Short tutorials showcasing our Russian e-file cuticle techniques and hand-painted art.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {videos.map((vid) => (
+              <div
+                key={vid.id}
+                className="bg-[#FAF9F6] rounded-2xl overflow-hidden border border-[#EAE5DA] shadow-sm hover:shadow-md transition-all flex flex-col justify-between group"
+              >
+                <div>
+                  <div
+                    onClick={() => setActiveVideo(vid)}
+                    className="relative h-48 overflow-hidden bg-black cursor-pointer"
+                  >
+                    <img
+                      src={vid.thumbnail}
+                      alt={vid.title}
+                      className="w-full h-full object-cover opacity-85 group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
+                      <div className="w-12 h-12 rounded-full bg-white text-[#5C3D75] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                        <Play className="w-5 h-5 fill-current ml-0.5" />
+                      </div>
+                    </div>
+                    <div className="absolute bottom-2 right-2 bg-black/80 text-white text-[10px] font-bold px-2 py-0.5 rounded-md">
+                      {vid.duration}
+                    </div>
+                  </div>
+
+                  <div className="p-4 space-y-2">
+                    <div className="flex items-center justify-between text-[11px] text-gray-500">
+                      <span className="text-[#5C3D75] font-bold uppercase">{vid.tag}</span>
+                      <span>{vid.views}</span>
+                    </div>
+                    <h3 className="font-serif text-sm font-bold text-gray-900 leading-snug">{vid.title}</h3>
+                    <p className="text-xs text-gray-600 line-clamp-2">{vid.description}</p>
+                  </div>
+                </div>
+
+                <div className="p-4 pt-0">
+                  <button
+                    onClick={() => setActiveVideo(vid)}
+                    className="text-xs font-semibold text-[#5C3D75] hover:underline inline-flex items-center gap-1"
+                  >
+                    Watch Reel <ChevronRight className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 9. NAIL AFTERCARE GUIDE */}
+      <section className="py-14 bg-[#FAF9F6] border-t border-[#EAE5DA]">
+        <div className="max-w-5xl mx-auto px-4 sm:px-8">
+          <div className="text-center max-w-lg mx-auto mb-8 space-y-1">
+            <h2 className="font-serif text-2xl font-bold text-[#1C1917]">Nail Health & Aftercare Tips</h2>
+            <p className="text-xs text-gray-600">Keep your gel extensions and manicures fresh for 4+ weeks.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {careTips.map((tip, i) => (
+              <div key={i} className="bg-white p-5 rounded-2xl border border-[#EAE5DA] space-y-2">
+                <div className="w-7 h-7 rounded-lg bg-[#5C3D75]/10 text-[#5C3D75] font-serif font-bold text-sm flex items-center justify-center">
+                  0{i + 1}
+                </div>
+                <h3 className="font-bold text-xs text-gray-900">{tip.title}</h3>
+                <p className="text-xs text-gray-600 leading-relaxed">{tip.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 10. ABOUT US & HYGIENE PROMISE */}
+      <section id="about" className="py-16 md:py-24 bg-white border-t border-[#EAE5DA]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+            
+            <div className="lg:col-span-5">
+              <div className="rounded-2xl overflow-hidden border-4 border-[#FAF9F6] shadow-md bg-white">
+                <img
+                  src="https://images.unsplash.com/photo-1519014816548-bf5fe059798b?auto=format&fit=crop&w=800&q=80"
+                  alt="Classic Nail Art Studio experience"
+                  className="w-full h-80 object-cover"
+                />
+              </div>
+            </div>
+
+            <div className="lg:col-span-7 space-y-4">
+              <span className="text-xs font-bold uppercase tracking-wider text-[#5C3D75]">
+                About Our Studio
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-serif font-bold text-[#1C1917]">
+                A Peaceful Haven For Thoughtful Nail Care
+              </h2>
+              <p className="text-xs sm:text-sm text-[#555555] leading-relaxed">
+                At <strong>Classic Nail Art</strong>, we believe manicures are more than beauty — they are an act of self-care. Located near the serene lakeside of Pokhara, our studio provides a calm, unhurried atmosphere where every client receives dedicated, one-on-one attention.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                <div className="bg-[#FAF9F6] p-3.5 rounded-xl border border-[#E5E0D5] flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-[#5C3D75]/10 text-[#5C3D75] shrink-0">
+                    <Shield className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold text-[#1C1917]">Autoclave Sterilization</h3>
+                    <p className="text-[11px] text-[#666666] mt-0.5">Medical-grade sterilization for every metal tool.</p>
+                  </div>
+                </div>
+
+                <div className="bg-[#FAF9F6] p-3.5 rounded-xl border border-[#E5E0D5] flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-[#5C3D75]/10 text-[#5C3D75] shrink-0">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold text-[#1C1917]">Certified Master Artists</h3>
+                    <p className="text-[11px] text-[#666666] mt-0.5">Over 7 years of specialized Russian manicure experience.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* 11. FREQUENTLY ASKED QUESTIONS */}
       <section id="faq" className="py-16 md:py-24 bg-[#FAF9F6] border-t border-[#EAE5DA]">
         <div className="max-w-4xl mx-auto px-4 sm:px-8">
           
@@ -954,7 +1222,7 @@ export function ClassicNailArtPage() {
                 >
                   <button
                     onClick={() => setOpenFaq(isOpen ? null : index)}
-                    className="w-full p-5 text-left flex items-center justify-between gap-4 hover:bg-[#FAF9F6] transition-colors"
+                    className="w-full p-5 text-left flex items-center justify-between gap-4 hover:bg-[#FAF9F6] transition-colors cursor-pointer"
                   >
                     <span className="font-serif text-sm sm:text-base font-bold text-[#1C1917]">
                       {faq.q}
@@ -975,7 +1243,7 @@ export function ClassicNailArtPage() {
         </div>
       </section>
 
-      {/* 9. CLIENT TESTIMONIALS */}
+      {/* 12. CLIENT TESTIMONIALS */}
       <section id="testimonials" className="py-16 md:py-24 bg-white border-t border-[#EAE5DA]">
         <div className="max-w-6xl mx-auto px-4 sm:px-8">
           
@@ -1013,7 +1281,7 @@ export function ClassicNailArtPage() {
         </div>
       </section>
 
-      {/* 10. CONTACT & LOCATION SECTION */}
+      {/* 13. CONTACT & LOCATION SECTION */}
       <section id="contact" className="py-16 md:py-24 bg-[#FAF9F6] border-t border-[#EAE5DA]">
         <div className="max-w-6xl mx-auto px-4 sm:px-8">
           
@@ -1076,7 +1344,7 @@ export function ClassicNailArtPage() {
                     navigator.clipboard?.writeText('Lakeside Road, Street No. 6, Pokhara, Nepal');
                     showToast('Studio address copied to clipboard!');
                   }}
-                  className="inline-flex items-center gap-1.5 bg-white border border-[#DCD6C9] hover:bg-[#F2EFE8] text-gray-700 text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors"
+                  className="inline-flex items-center gap-1.5 bg-white border border-[#DCD6C9] hover:bg-[#F2EFE8] text-gray-700 text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors cursor-pointer"
                 >
                   <Copy className="w-3.5 h-3.5" />
                   Copy Address
@@ -1121,7 +1389,7 @@ export function ClassicNailArtPage() {
 
                 <button
                   type="submit"
-                  className="bg-[#5C3D75] hover:bg-[#482F5E] text-white font-semibold px-6 py-2.5 rounded-xl transition-colors inline-flex items-center gap-1.5"
+                  className="bg-[#5C3D75] hover:bg-[#482F5E] text-white font-semibold px-6 py-2.5 rounded-xl transition-colors inline-flex items-center gap-1.5 cursor-pointer"
                 >
                   <Send className="w-3.5 h-3.5" />
                   Send Message
@@ -1133,7 +1401,7 @@ export function ClassicNailArtPage() {
         </div>
       </section>
 
-      {/* 11. FOOTER */}
+      {/* 14. FOOTER */}
       <footer className="bg-[#1C1917] text-[#999999] text-xs py-12 px-4 sm:px-8">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2 text-white font-serif text-lg font-bold">
@@ -1141,13 +1409,13 @@ export function ClassicNailArtPage() {
             <span>Classic Nail Art Studio</span>
           </div>
 
-          <div className="flex items-center space-x-6 text-[#CCCCCC]">
+          <div className="flex flex-wrap justify-center items-center gap-5 text-[#CCCCCC]">
             <a href="#home" className="hover:text-white transition-colors">Home</a>
             <a href="#services" className="hover:text-white transition-colors">Services</a>
+            <a href="#packages" className="hover:text-white transition-colors">Packages</a>
             <a href="#customizer" className="hover:text-white transition-colors">Customizer</a>
-            <a href="#about" className="hover:text-white transition-colors">About</a>
             <a href="#gallery" className="hover:text-white transition-colors">Lookbook</a>
-            <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
+            <a href="#videos" className="hover:text-white transition-colors">Videos</a>
             <a href="#contact" className="hover:text-white transition-colors">Contact</a>
           </div>
 
@@ -1157,13 +1425,31 @@ export function ClassicNailArtPage() {
         </div>
       </footer>
 
-      {/* 12. GALLERY LOOK DETAIL MODAL */}
+      {/* 15. MOBILE FLOATING ACTION BAR */}
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-200 px-4 py-2.5 flex items-center justify-between gap-3 shadow-lg">
+        <a
+          href="tel:+9779846000000"
+          className="flex-1 bg-gray-100 text-gray-800 text-xs font-semibold py-2.5 rounded-xl flex items-center justify-center gap-1.5"
+        >
+          <Phone className="w-3.5 h-3.5 text-[#5C3D75]" />
+          Call Studio
+        </a>
+        <button
+          onClick={() => setBookingOpen(true)}
+          className="flex-1 bg-[#5C3D75] text-white text-xs font-semibold py-2.5 rounded-xl flex items-center justify-center gap-1.5 shadow"
+        >
+          <Calendar className="w-3.5 h-3.5" />
+          Book Slot
+        </button>
+      </div>
+
+      {/* 16. GALLERY LOOK DETAIL MODAL */}
       {selectedGalleryItem && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl relative animate-in fade-in duration-150">
             <button
               onClick={() => setSelectedGalleryItem(null)}
-              className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-white/90 text-gray-700 hover:text-black flex items-center justify-center shadow"
+              className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-white/90 text-gray-700 hover:text-black flex items-center justify-center shadow cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -1207,7 +1493,7 @@ export function ClassicNailArtPage() {
                     setSelectedGalleryItem(null);
                     setBookingOpen(true);
                   }}
-                  className="flex-1 bg-[#5C3D75] hover:bg-[#482F5E] text-white py-3 rounded-xl font-semibold uppercase tracking-wider"
+                  className="flex-1 bg-[#5C3D75] hover:bg-[#482F5E] text-white py-3 rounded-xl font-semibold uppercase tracking-wider cursor-pointer"
                 >
                   Book This Look
                 </button>
@@ -1217,13 +1503,47 @@ export function ClassicNailArtPage() {
         </div>
       )}
 
-      {/* 13. APPOINTMENT BOOKING MODAL */}
+      {/* 17. VIDEO REEL PLAYER MODAL */}
+      {activeVideo && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-gray-950 text-white rounded-3xl max-w-xl w-full p-6 shadow-2xl relative">
+            <button
+              onClick={() => setActiveVideo(null)}
+              className="absolute top-5 right-5 text-gray-400 hover:text-white p-1 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div className="space-y-4">
+              <div className="relative aspect-video rounded-2xl overflow-hidden bg-black flex items-center justify-center">
+                <img
+                  src={activeVideo.thumbnail}
+                  alt={activeVideo.title}
+                  className="w-full h-full object-cover opacity-60"
+                />
+                <div className="absolute text-center space-y-2">
+                  <div className="w-14 h-14 rounded-full bg-[#5C3D75] flex items-center justify-center mx-auto shadow-lg animate-pulse">
+                    <Play className="w-7 h-7 fill-white ml-0.5 text-white" />
+                  </div>
+                  <p className="text-xs text-gray-300">Playing Tutorial Demonstration</p>
+                </div>
+              </div>
+              <div>
+                <span className="text-[10px] uppercase font-bold tracking-widest text-[#A879CA]">{activeVideo.tag}</span>
+                <h3 className="font-serif text-lg font-bold mt-0.5">{activeVideo.title}</h3>
+                <p className="text-xs text-gray-400 mt-1">{activeVideo.description}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 18. APPOINTMENT BOOKING MODAL */}
       {bookingOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 sm:p-7 shadow-xl relative animate-in fade-in duration-150 text-xs">
             <button
               onClick={() => setBookingOpen(false)}
-              className="absolute top-4 right-4 text-[#777777] hover:text-[#111111] p-1"
+              className="absolute top-4 right-4 text-[#777777] hover:text-[#111111] p-1 cursor-pointer"
               aria-label="Close modal"
             >
               <X className="w-5 h-5" />
@@ -1236,7 +1556,7 @@ export function ClassicNailArtPage() {
                 </div>
                 <h3 className="font-serif text-xl font-bold text-[#1C1917]">Booking Request Received!</h3>
                 <p className="text-[#666666] leading-relaxed">
-                  We look forward to seeing you. We will contact you at <strong>{formData.phone}</strong> to confirm your slot.
+                  We look forward to seeing you. We will contact you at <strong>{formData.phone}</strong> to confirm your slot with <strong>{formData.artist}</strong>.
                 </p>
               </div>
             ) : (
@@ -1257,6 +1577,23 @@ export function ClassicNailArtPage() {
                       {services.map(s => (
                         <option key={s.id} value={s.title}>{s.title} — {s.price}</option>
                       ))}
+                      {packages.map((p, i) => (
+                        <option key={`pkg-${i}`} value={p.title}>{p.title} — {p.price}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[#444444] font-semibold mb-1">Preferred Nail Artist</label>
+                    <select
+                      value={formData.artist}
+                      onChange={(e) => setFormData({ ...formData, artist: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-[#DCD6C9] bg-white focus:outline-none focus:border-[#5C3D75]"
+                    >
+                      <option>Priya Shrestha (Master Artist & Educator)</option>
+                      <option>Sunita Gurung (Senior Gel Specialist)</option>
+                      <option>Rojina Tamang (Russian Cuticle Expert)</option>
+                      <option>First Available Specialist</option>
                     </select>
                   </div>
 
@@ -1325,7 +1662,7 @@ export function ClassicNailArtPage() {
 
                   <button
                     type="submit"
-                    className="w-full bg-[#5C3D75] hover:bg-[#482F5E] text-white py-2.5 rounded-xl font-semibold uppercase tracking-wider transition-colors mt-2"
+                    className="w-full bg-[#5C3D75] hover:bg-[#482F5E] text-white py-2.5 rounded-xl font-semibold uppercase tracking-wider transition-colors mt-2 cursor-pointer"
                   >
                     Confirm Appointment
                   </button>
