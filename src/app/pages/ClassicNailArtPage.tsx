@@ -11,6 +11,7 @@ import {
   X,
   Clock,
   ChevronRight,
+  ChevronDown,
   Sparkles,
   Heart,
   Calendar,
@@ -20,7 +21,12 @@ import {
   Shield,
   Star,
   ArrowRight,
-  ExternalLink
+  Sliders,
+  HelpCircle,
+  Palette,
+  CheckCircle2,
+  Copy,
+  Info
 } from 'lucide-react';
 
 interface Service {
@@ -29,20 +35,41 @@ interface Service {
   category: string;
   duration: string;
   price: string;
+  priceNum: number;
   description: string;
   image: string;
   tag?: string;
   highlights: string[];
 }
 
+interface GalleryItem {
+  id: string;
+  title: string;
+  category: string;
+  image: string;
+  details: string;
+  productsUsed: string;
+  timeEstimate: string;
+  priceEstimate: string;
+}
+
 export function ClassicNailArtPage() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
   const [activeCategory, setActiveCategory] = useState('All');
+  const [activeServiceTab, setActiveServiceTab] = useState('All');
   const [bookingOpen, setBookingOpen] = useState(false);
-  const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const [selectedGalleryItem, setSelectedGalleryItem] = useState<GalleryItem | null>(null);
   const [likedItems, setLikedItems] = useState<Record<string, boolean>>({});
   const [bookingSuccess, setBookingSuccess] = useState(false);
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Live Nail Simulator State
+  const [simShape, setSimShape] = useState<'Almond' | 'Coffin' | 'Stiletto' | 'Square' | 'Oval'>('Almond');
+  const [simLength, setSimLength] = useState<'Natural' | 'Medium' | 'Long' | 'XL'>('Medium');
+  const [simColor, setSimColor] = useState({ name: 'Midnight Plum', hex: '#4A2A61', bgHex: '#F2ECF7' });
+  const [simFinish, setSimFinish] = useState<'Mirror Gloss' | 'Velvet Matte' | 'Chrome Glazed' | '3D Embellished'>('Mirror Gloss');
 
   // Form State
   const [formData, setFormData] = useState({
@@ -56,11 +83,27 @@ export function ClassicNailArtPage() {
     notes: ''
   });
 
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 30);
     window.addEventListener('scroll', onScroll);
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  const colorSwatches = [
+    { name: 'Midnight Plum', hex: '#4A2A61', bgHex: '#F2ECF7' },
+    { name: 'Lavender Mist', hex: '#A78BFA', bgHex: '#F5F3FF' },
+    { name: 'Porcelain Nude', hex: '#E7D8CF', bgHex: '#FAF7F5' },
+    { name: 'Cherry Noir', hex: '#6B1D2F', bgHex: '#FDF2F4' },
+    { name: 'Pearl Glaze', hex: '#F0EDE6', bgHex: '#FAF8F5' },
+    { name: 'Sage Velvet', hex: '#6A8473', bgHex: '#F1F5F2' },
+    { name: 'Onyx Tribal', hex: '#1C1917', bgHex: '#F5F5F4' },
+    { name: 'Champagne Gold', hex: '#C5A880', bgHex: '#FAF6F0' }
+  ];
 
   const services: Service[] = [
     {
@@ -69,6 +112,7 @@ export function ClassicNailArtPage() {
       category: 'Care',
       duration: '45 min',
       price: 'NPR 1,500',
+      priceNum: 1500,
       tag: 'Most Popular',
       description: 'Precision dry e-file cuticle detailing, organic nail bed strengthening, natural buffing, and warm botanical hand massage.',
       image: 'https://images.unsplash.com/photo-1632345031435-8727f6897d53?auto=format&fit=crop&w=800&q=80',
@@ -80,6 +124,7 @@ export function ClassicNailArtPage() {
       category: 'Art',
       duration: '75 min',
       price: 'NPR 2,800',
+      priceNum: 2800,
       tag: 'Signature',
       description: 'Custom hand-painted patterns, fine geometric tribal line work, encapsulated flakes, subtle chrome, and Swarovski elements.',
       image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=800&q=80',
@@ -91,6 +136,7 @@ export function ClassicNailArtPage() {
       category: 'Extensions',
       duration: '90 min',
       price: 'NPR 3,500',
+      priceNum: 3500,
       tag: 'Long Lasting',
       description: 'Lightweight, durable hard gel or acrylic extensions shaped to your preference (Almond, Coffin, Stiletto, or Square).',
       image: 'https://images.unsplash.com/photo-1638814378821-1c7cbbd648ac?auto=format&fit=crop&w=800&q=80',
@@ -102,48 +148,119 @@ export function ClassicNailArtPage() {
       category: 'Spa',
       duration: '50 min',
       price: 'NPR 2,000',
+      priceNum: 2000,
       description: 'Warm Himalayan herbal bath, gentle rose petal sugar scrub, warm paraffin wax envelope, and relaxing acupressure massage.',
       image: 'https://images.unsplash.com/photo-1519014816548-bf5fe059798b?auto=format&fit=crop&w=800&q=80',
       highlights: ['Dead skin exfoliation', 'Deep collagen hydration', 'Relieves tension & dryness']
+    },
+    {
+      id: 'srv-5',
+      title: 'Glazed French Chrome & Ombre',
+      category: 'Art',
+      duration: '60 min',
+      price: 'NPR 2,400',
+      priceNum: 2400,
+      description: 'The iconic Hailey-inspired glazed pearl sheen, micro-French tips, and seamless airbrushed gradient transitions.',
+      image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80',
+      highlights: ['Fine chrome powder buffing', 'Micro precision smile line', '4-week mirror shine']
+    },
+    {
+      id: 'srv-6',
+      title: 'Bridal & Red Carpet Set',
+      category: 'Extensions',
+      duration: '120 min',
+      price: 'NPR 5,500',
+      priceNum: 5500,
+      tag: 'Luxury',
+      description: 'Bespoke bridal consultation, full sculpted gel extensions, genuine freshwater pearl embellishments, and matching pedicure.',
+      image: 'https://images.unsplash.com/photo-1607779097040-26e80aa78e66?auto=format&fit=crop&w=800&q=80',
+      highlights: ['Matching hand + foot set', 'Swarovski & pearl accents', 'Bridal touch-up kit included']
     }
   ];
 
-  const gallery = [
+  const gallery: GalleryItem[] = [
     {
       id: 'g1',
       title: 'Minimalist Line & Pearl Glaze',
       category: 'Minimal',
-      image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80'
+      image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80',
+      details: 'Clean neutral almond nails finished with micro white geometric arch lines and holographic pearl chrome dusting.',
+      productsUsed: 'Japanese Hard Gel Base + Chrome Dust #01 + No-Wipe High Gloss Top',
+      timeEstimate: '60 mins',
+      priceEstimate: 'NPR 2,400'
     },
     {
       id: 'g2',
       title: 'Midnight Tribal Geometry',
       category: 'Hand-Painted',
-      image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=800&q=80'
+      image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=800&q=80',
+      details: 'Our signature monochrome editorial set with precise hand-painted symmetric mandala and tribal geometric motifs.',
+      productsUsed: 'Black Onyx Gel Liner + Matte Velvet Base + Silver Micro Foils',
+      timeEstimate: '75 mins',
+      priceEstimate: 'NPR 2,800'
     },
     {
       id: 'g3',
       title: 'Pastel Lilac Almond Gloss',
       category: 'Extensions',
-      image: 'https://images.unsplash.com/photo-1638814378821-1c7cbbd648ac?auto=format&fit=crop&w=800&q=80'
+      image: 'https://images.unsplash.com/photo-1638814378821-1c7cbbd648ac?auto=format&fit=crop&w=800&q=80',
+      details: 'Soft lavender-lilac apex extensions crafted with flexible polygel for natural weight and unbreakable strength.',
+      productsUsed: 'Sculpting Polygel + Pastel Lilac Polish #42 + Organic Cuticle Oil',
+      timeEstimate: '90 mins',
+      priceEstimate: 'NPR 3,500'
     },
     {
       id: 'g4',
       title: 'Classic French Ombre Chrome',
       category: 'Minimal',
-      image: 'https://images.unsplash.com/photo-1599940824399-b87987ceb72a?auto=format&fit=crop&w=800&q=80'
+      image: 'https://images.unsplash.com/photo-1599940824399-b87987ceb72a?auto=format&fit=crop&w=800&q=80',
+      details: 'Subtle baby boomer soft fade from natural translucent pink into crisp white, glazed with fine iridescent powder.',
+      productsUsed: 'Airbrush Ombre Gel + Glazed Powder + Keratin Base',
+      timeEstimate: '65 mins',
+      priceEstimate: 'NPR 2,500'
     },
     {
       id: 'g5',
       title: 'Velvet Ruby Red & Gold Flakes',
       category: 'Hand-Painted',
-      image: 'https://images.unsplash.com/photo-1607779097040-26e80aa78e66?auto=format&fit=crop&w=800&q=80'
+      image: 'https://images.unsplash.com/photo-1607779097040-26e80aa78e66?auto=format&fit=crop&w=800&q=80',
+      details: 'Deep royal crimson red gel accented with encapsulated 24k gold leafing and 3D crystal clusters for celebrations.',
+      productsUsed: 'Crimson Red Gel #18 + 24K Gold Flake Foil + Swarovski Crystals',
+      timeEstimate: '85 mins',
+      priceEstimate: 'NPR 3,200'
     },
     {
       id: 'g6',
       title: 'Botanical Leaf Outline & Nude Gel',
       category: 'Minimal',
-      image: 'https://images.unsplash.com/photo-1632345031435-8727f6897d53?auto=format&fit=crop&w=800&q=80'
+      image: 'https://images.unsplash.com/photo-1632345031435-8727f6897d53?auto=format&fit=crop&w=800&q=80',
+      details: 'Understated elegance featuring delicate hand-drawn botanical sprigs on a sheer porcelain nude base.',
+      productsUsed: 'Sheer Nude Base #03 + Ultra-Fine Detail Liner Brush #000',
+      timeEstimate: '55 mins',
+      priceEstimate: 'NPR 2,200'
+    }
+  ];
+
+  const faqs = [
+    {
+      q: 'What is a Russian Manicure and how does it differ from a standard manicure?',
+      a: 'A Russian Manicure is a specialized dry technique using electric e-file diamond bits to gently and cleanly remove dead cuticle skin and prepare the entire nail plate. Because we polish extremely close to the proximal fold, the manicure looks immaculate for 3 to 4 weeks with no lifting or ragged edges.'
+    },
+    {
+      q: 'How long do your gel extensions typically last?',
+      a: 'Our polygel and hard gel extensions last 3 to 5 weeks without chipping or lifting when proper aftercare is followed. We recommend a refill or removal after 4 weeks to maintain nail balance and healthy growth.'
+    },
+    {
+      q: 'Are your tools medical-grade sterilized?',
+      a: 'Yes, 100%. All stainless steel instruments undergo a three-step medical disinfection cycle: ultrasonic bath cleansing, high-level chemical disinfection, and medical autoclave sterilization sealed in single-use pouches opened right before your service. Buffers and nail files are always single-use.'
+    },
+    {
+      q: 'Do you take walk-ins or is an appointment required?',
+      a: 'We welcome walk-ins based on daily studio availability, but because each bespoke nail art appointment requires dedicated 1-on-1 focus, we strongly recommend booking an appointment online or via WhatsApp.'
+    },
+    {
+      q: 'Can I bring my own nail design inspiration from Pinterest or Instagram?',
+      a: 'Absolutely! Our master artists love custom work. You can show us reference photos during your appointment, and we will tailor the colors, shapes, and proportions to your hands.'
     }
   ];
 
@@ -168,12 +285,29 @@ export function ClassicNailArtPage() {
     }
   ];
 
+  const filteredServices = activeServiceTab === 'All'
+    ? services
+    : services.filter(s => s.category === activeServiceTab);
+
   const filteredGallery = activeCategory === 'All'
     ? gallery
     : gallery.filter(item => item.category === activeCategory);
 
   const toggleLike = (id: string) => {
-    setLikedItems(prev => ({ ...prev, [id]: !prev[id] }));
+    const nextState = !likedItems[id];
+    setLikedItems(prev => ({ ...prev, [id]: nextState }));
+    showToast(nextState ? 'Saved look to your favorites!' : 'Removed from favorites');
+  };
+
+  const calculateSimulatorPrice = () => {
+    let base = 1500;
+    if (simShape === 'Coffin' || simShape === 'Stiletto') base += 400;
+    if (simLength === 'Medium') base += 500;
+    if (simLength === 'Long') base += 900;
+    if (simLength === 'XL') base += 1300;
+    if (simFinish === 'Chrome Glazed') base += 500;
+    if (simFinish === '3D Embellished') base += 900;
+    return base;
   };
 
   const handleBookingSubmit = (e: React.FormEvent) => {
@@ -182,12 +316,20 @@ export function ClassicNailArtPage() {
     setTimeout(() => {
       setBookingSuccess(false);
       setBookingOpen(false);
-    }, 2400);
+    }, 2200);
   };
 
   return (
     <div className="min-h-screen bg-[#FAF9F6] text-[#222222] font-sans antialiased selection:bg-[#5C3D75] selection:text-white">
       
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 bg-[#1C1917] text-white text-xs px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 border border-gray-700 animate-in slide-in-from-bottom-2 duration-200">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
       {/* 1. TOP UTILITY BAR (Clean, human, functional) */}
       <div className="bg-[#FFFFFF] border-b border-[#EBE7DF] text-[13px] text-[#555555] py-2 px-4 sm:px-8">
         <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3">
@@ -241,7 +383,7 @@ export function ClassicNailArtPage() {
         </div>
       </div>
 
-      {/* 2. MAIN NAVIGATION (Clean white, sticky, clear hierarchy) */}
+      {/* 2. MAIN NAVIGATION */}
       <header className={`sticky top-0 z-40 bg-white/95 backdrop-blur-md transition-all duration-200 border-b ${scrolled ? 'border-[#E8E4DC] shadow-sm py-3.5' : 'border-[#EFEBE4] py-4'}`}>
         <div className="max-w-6xl mx-auto px-4 sm:px-8 flex items-center justify-between">
           {/* Logo */}
@@ -254,23 +396,24 @@ export function ClassicNailArtPage() {
                 Classic Nail Art
               </span>
               <span className="text-[10px] uppercase font-semibold tracking-widest text-[#777777] mt-0.5">
-                Studio & Nail Care
+                Studio & Academy
               </span>
             </div>
           </a>
 
-          {/* Nav Items (Matching screenshot) */}
-          <nav className="hidden lg:flex items-center space-x-8 text-xs font-semibold uppercase tracking-wider text-[#444444]">
+          {/* Nav Items */}
+          <nav className="hidden lg:flex items-center space-x-7 text-xs font-semibold uppercase tracking-wider text-[#444444]">
             <a href="#home" className="text-[#5C3D75] hover:text-[#462B5B] transition-colors">Home</a>
             <a href="#services" className="hover:text-[#5C3D75] transition-colors">Services</a>
+            <a href="#customizer" className="hover:text-[#5C3D75] transition-colors">Customizer</a>
             <a href="#about" className="hover:text-[#5C3D75] transition-colors">About Us</a>
-            <a href="#gallery" className="hover:text-[#5C3D75] transition-colors">Gallery</a>
-            <a href="#testimonials" className="hover:text-[#5C3D75] transition-colors">Testimonials</a>
+            <a href="#gallery" className="hover:text-[#5C3D75] transition-colors">Lookbook</a>
+            <a href="#faq" className="hover:text-[#5C3D75] transition-colors">FAQ</a>
             <a href="#contact" className="hover:text-[#5C3D75] transition-colors">Contact</a>
           </nav>
 
           {/* Direct CTA */}
-          <div className="hidden sm:block">
+          <div className="hidden sm:flex items-center gap-3">
             <button
               onClick={() => setBookingOpen(true)}
               className="bg-[#5C3D75] hover:bg-[#4B2F60] text-white text-xs uppercase font-semibold tracking-wider px-5 py-2.5 rounded-full transition-all duration-150 shadow-sm"
@@ -294,9 +437,10 @@ export function ClassicNailArtPage() {
           <div className="lg:hidden bg-white border-b border-[#E8E4DC] px-6 py-4 space-y-3 text-sm font-semibold uppercase tracking-wide">
             <a href="#home" onClick={() => setMobileMenu(false)} className="block text-[#5C3D75] py-1">Home</a>
             <a href="#services" onClick={() => setMobileMenu(false)} className="block text-[#444444] hover:text-[#5C3D75] py-1">Services</a>
+            <a href="#customizer" onClick={() => setMobileMenu(false)} className="block text-[#444444] hover:text-[#5C3D75] py-1">Customizer</a>
             <a href="#about" onClick={() => setMobileMenu(false)} className="block text-[#444444] hover:text-[#5C3D75] py-1">About Us</a>
-            <a href="#gallery" onClick={() => setMobileMenu(false)} className="block text-[#444444] hover:text-[#5C3D75] py-1">Gallery</a>
-            <a href="#testimonials" onClick={() => setMobileMenu(false)} className="block text-[#444444] hover:text-[#5C3D75] py-1">Testimonials</a>
+            <a href="#gallery" onClick={() => setMobileMenu(false)} className="block text-[#444444] hover:text-[#5C3D75] py-1">Lookbook</a>
+            <a href="#faq" onClick={() => setMobileMenu(false)} className="block text-[#444444] hover:text-[#5C3D75] py-1">FAQ</a>
             <a href="#contact" onClick={() => setMobileMenu(false)} className="block text-[#444444] hover:text-[#5C3D75] py-1">Contact</a>
             <button
               onClick={() => { setMobileMenu(false); setBookingOpen(true); }}
@@ -308,9 +452,8 @@ export function ClassicNailArtPage() {
         )}
       </header>
 
-      {/* 3. HERO SECTION (High aesthetic fidelity, natural & human design) */}
+      {/* 3. HERO SECTION */}
       <section id="home" className="relative overflow-hidden bg-gradient-to-b from-[#F7F4EE] to-[#FAF9F6] py-12 md:py-20 border-b border-[#EDE8DE]">
-        {/* Subtle, tasteful hand-drawn botanical branch lines */}
         <div className="absolute left-2 top-4 bottom-4 pointer-events-none opacity-25 select-none hidden sm:block">
           <svg width="180" height="420" viewBox="0 0 180 420" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M-20 10C30 70 80 110 70 190C60 270 -10 310 40 400" stroke="#7A6682" strokeWidth="1.2" />
@@ -323,7 +466,7 @@ export function ClassicNailArtPage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-8 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
             
-            {/* Left: Hero Image (Black pattern nail art photo with clean border) */}
+            {/* Left: Hero Image */}
             <div className="lg:col-span-6 flex justify-center order-2 lg:order-1">
               <div className="relative w-full max-w-md">
                 <div className="rounded-2xl overflow-hidden shadow-xl border-4 border-white bg-white">
@@ -352,7 +495,6 @@ export function ClassicNailArtPage() {
               </p>
 
               <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5 pt-2">
-                {/* Purple pill button matching screenshot */}
                 <a
                   href="#services"
                   className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-3 rounded-full bg-[#5C3D75] hover:bg-[#4A2E66] text-white text-xs uppercase font-semibold tracking-wider transition-colors shadow-sm"
@@ -369,7 +511,6 @@ export function ClassicNailArtPage() {
                 </button>
               </div>
 
-              {/* Clean human notes */}
               <div className="pt-4 border-t border-[#E5E0D5] grid grid-cols-3 gap-3 text-center lg:text-left text-xs text-[#666666]">
                 <div>
                   <div className="font-bold text-[#1C1917] text-sm">Medical-Grade</div>
@@ -390,29 +531,45 @@ export function ClassicNailArtPage() {
         </div>
       </section>
 
-      {/* 4. SERVICES SECTION (Clean centered title + 4 rounded cards matching reference) */}
+      {/* 4. SERVICES SECTION */}
       <section id="services" className="py-16 md:py-24 bg-white">
         <div className="max-w-6xl mx-auto px-4 sm:px-8">
           
-          <div className="text-center max-w-xl mx-auto mb-14 space-y-2">
+          <div className="text-center max-w-xl mx-auto mb-10 space-y-2">
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-[#1C1917]">
-              Services
+              Services & Treatments
             </h2>
             <div className="w-12 h-0.5 bg-[#5C3D75] mx-auto rounded-full" />
             <p className="text-xs sm:text-sm text-[#666666]">
               Thoughtfully curated treatments for healthy, beautifully sculpted nails.
             </p>
+
+            {/* Service Category Filter */}
+            <div className="flex flex-wrap items-center justify-center gap-2 pt-3">
+              {['All', 'Care', 'Art', 'Extensions', 'Spa'].map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveServiceTab(tab)}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+                    activeServiceTab === tab
+                      ? 'bg-[#5C3D75] text-white shadow-xs'
+                      : 'bg-[#F2EFE8] text-[#555555] hover:bg-[#EAE5DC]'
+                  }`}
+                >
+                  {tab === 'All' ? 'All Services' : tab}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* 4 Service Cards Grid (as in screenshot) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {services.map((service) => (
+          {/* Service Cards Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredServices.map((service) => (
               <div
                 key={service.id}
                 className="bg-[#FAF9F6] rounded-2xl overflow-hidden border border-[#EBE6DC] shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between"
               >
                 <div>
-                  {/* Photo with clean rounded top */}
                   <div className="relative h-48 overflow-hidden bg-[#ECE8DF]">
                     <img
                       src={service.image}
@@ -424,7 +581,6 @@ export function ClassicNailArtPage() {
                     </div>
                   </div>
 
-                  {/* Content */}
                   <div className="p-5 space-y-2.5">
                     <div className="flex items-center justify-between text-xs text-[#777777]">
                       <span className="flex items-center gap-1 font-medium">
@@ -445,6 +601,15 @@ export function ClassicNailArtPage() {
                     <p className="text-xs text-[#666666] leading-relaxed line-clamp-3">
                       {service.description}
                     </p>
+
+                    <div className="pt-2 border-t border-[#ECE7DC] space-y-1">
+                      {service.highlights.map((h, i) => (
+                        <div key={i} className="flex items-center gap-1.5 text-[11px] text-[#555555]">
+                          <Check className="w-3 h-3 text-emerald-600 shrink-0" />
+                          <span>{h}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
@@ -466,8 +631,180 @@ export function ClassicNailArtPage() {
         </div>
       </section>
 
-      {/* 5. ABOUT US & HYGIENE PROMISE */}
-      <section id="about" className="py-16 md:py-24 bg-[#F7F5F0] border-y border-[#EAE5DA]">
+      {/* 5. INTERACTIVE LIVE NAIL CUSTOMIZER / SHADE SIMULATOR */}
+      <section id="customizer" className="py-16 md:py-24 bg-[#F5F2EC] border-y border-[#E6E0D3]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-8">
+          
+          <div className="text-center max-w-xl mx-auto mb-12 space-y-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#5C3D75]/10 text-[#5C3D75] text-xs font-bold">
+              <Palette className="w-3.5 h-3.5" />
+              <span>Interactive Style Simulator</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-serif font-bold text-[#1C1917]">
+              Build Your Custom Nail Set
+            </h2>
+            <p className="text-xs sm:text-sm text-[#666666]">
+              Choose your shape, length, shade, and finish to calculate instant estimated cost and book your custom session.
+            </p>
+          </div>
+
+          <div className="bg-white rounded-3xl p-6 sm:p-10 border border-[#E2DBD0] shadow-md grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            
+            {/* Left: Customizer Controls */}
+            <div className="lg:col-span-7 space-y-6">
+              
+              {/* Step 1: Shape */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#333333] mb-2">
+                  1. Nail Shape
+                </label>
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                  {(['Almond', 'Coffin', 'Stiletto', 'Square', 'Oval'] as const).map(shape => (
+                    <button
+                      key={shape}
+                      type="button"
+                      onClick={() => setSimShape(shape)}
+                      className={`py-2 px-2.5 rounded-xl text-xs font-semibold border transition-all text-center ${
+                        simShape === shape
+                          ? 'bg-[#5C3D75] text-white border-[#5C3D75] shadow-xs'
+                          : 'bg-[#FAF9F6] text-[#555555] border-[#E5DFD4] hover:border-[#D0C8BC]'
+                      }`}
+                    >
+                      {shape}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Step 2: Length */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#333333] mb-2">
+                  2. Desired Length
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {(['Natural', 'Medium', 'Long', 'XL'] as const).map(len => (
+                    <button
+                      key={len}
+                      type="button"
+                      onClick={() => setSimLength(len)}
+                      className={`py-2 px-2.5 rounded-xl text-xs font-semibold border transition-all text-center ${
+                        simLength === len
+                          ? 'bg-[#5C3D75] text-white border-[#5C3D75] shadow-xs'
+                          : 'bg-[#FAF9F6] text-[#555555] border-[#E5DFD4] hover:border-[#D0C8BC]'
+                      }`}
+                    >
+                      {len}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Step 3: Color Palette Swatches */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#333333] mb-2">
+                  3. Color Shade: <span className="text-[#5C3D75] font-semibold">{simColor.name}</span>
+                </label>
+                <div className="flex flex-wrap gap-2.5">
+                  {colorSwatches.map(swatch => (
+                    <button
+                      key={swatch.name}
+                      type="button"
+                      onClick={() => setSimColor(swatch)}
+                      className={`w-9 h-9 rounded-full border-2 transition-transform relative ${
+                        simColor.name === swatch.name
+                          ? 'scale-110 border-[#5C3D75] ring-2 ring-[#5C3D75]/20'
+                          : 'border-white hover:scale-105'
+                      }`}
+                      style={{ backgroundColor: swatch.hex }}
+                      title={swatch.name}
+                    >
+                      {simColor.name === swatch.name && (
+                        <Check className={`w-3.5 h-3.5 mx-auto ${swatch.hex === '#F0EDE6' || swatch.hex === '#E7D8CF' ? 'text-gray-800' : 'text-white'}`} />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Step 4: Finish */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#333333] mb-2">
+                  4. Top Finish
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {(['Mirror Gloss', 'Velvet Matte', 'Chrome Glazed', '3D Embellished'] as const).map(fin => (
+                    <button
+                      key={fin}
+                      type="button"
+                      onClick={() => setSimFinish(fin)}
+                      className={`py-2 px-2 rounded-xl text-[11px] font-semibold border transition-all text-center ${
+                        simFinish === fin
+                          ? 'bg-[#5C3D75] text-white border-[#5C3D75]'
+                          : 'bg-[#FAF9F6] text-[#555555] border-[#E5DFD4] hover:border-[#D0C8BC]'
+                      }`}
+                    >
+                      {fin}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+
+            {/* Right: Live Preview Box & Summary */}
+            <div className="lg:col-span-5 bg-[#FAF9F6] p-6 rounded-2xl border border-[#E5DFD4] text-center space-y-4">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-[#5C3D75]">
+                Real-Time Configuration
+              </span>
+
+              {/* Graphical Visualizer Preview Card */}
+              <div
+                className="py-6 px-4 rounded-xl border border-[#E0D8CC] transition-colors relative overflow-hidden"
+                style={{ backgroundColor: simColor.bgHex }}
+              >
+                <div
+                  className="w-16 h-28 mx-auto rounded-t-full shadow-inner border-2 border-white/60 transition-all duration-300"
+                  style={{
+                    backgroundColor: simColor.hex,
+                    borderRadius: simShape === 'Square' ? '6px 6px 0 0' : simShape === 'Stiletto' ? '40px 40px 0 0' : '30px 30px 0 0',
+                    transform: simLength === 'XL' ? 'scaleY(1.2)' : simLength === 'Long' ? 'scaleY(1.1)' : simLength === 'Natural' ? 'scaleY(0.9)' : 'scaleY(1)'
+                  }}
+                />
+                <div className="mt-4 font-serif text-sm font-bold text-gray-900">
+                  {simShape} • {simLength} Length
+                </div>
+                <div className="text-xs text-gray-600">
+                  {simColor.name} ({simFinish})
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <div className="text-xs text-gray-500">Estimated Total</div>
+                <div className="text-3xl font-serif font-bold text-[#1C1917]">
+                  NPR {calculateSimulatorPrice().toLocaleString()}
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  setFormData(prev => ({
+                    ...prev,
+                    notes: `Custom Simulator: Shape: ${simShape}, Length: ${simLength}, Color: ${simColor.name}, Finish: ${simFinish} (Est: NPR ${calculateSimulatorPrice()})`
+                  }));
+                  setBookingOpen(true);
+                }}
+                className="w-full bg-[#5C3D75] hover:bg-[#472E5E] text-white py-3 rounded-xl text-xs font-semibold uppercase tracking-wider transition-colors shadow-sm"
+              >
+                Book This Custom Look
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* 6. ABOUT US & HYGIENE PROMISE */}
+      <section id="about" className="py-16 md:py-24 bg-[#FAF9F6]">
         <div className="max-w-6xl mx-auto px-4 sm:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
             
@@ -519,17 +856,17 @@ export function ClassicNailArtPage() {
         </div>
       </section>
 
-      {/* 6. DESIGN GALLERY */}
-      <section id="gallery" className="py-16 md:py-24 bg-white">
+      {/* 7. DESIGN LOOKBOOK & PORTFOLIO */}
+      <section id="gallery" className="py-16 md:py-24 bg-white border-t border-[#EAE5DA]">
         <div className="max-w-6xl mx-auto px-4 sm:px-8">
           
           <div className="text-center max-w-xl mx-auto mb-10 space-y-2">
             <h2 className="text-2xl sm:text-3xl font-serif font-bold text-[#1C1917]">
-              Design Gallery
+              Studio Lookbook
             </h2>
             <div className="w-12 h-0.5 bg-[#5C3D75] mx-auto rounded-full" />
             <p className="text-xs sm:text-sm text-[#666666]">
-              Real work created in our Pokhara studio.
+              Click any look to view details and required products.
             </p>
 
             {/* Filter Tabs */}
@@ -554,7 +891,8 @@ export function ClassicNailArtPage() {
             {filteredGallery.map(item => (
               <div
                 key={item.id}
-                className="group rounded-2xl overflow-hidden bg-[#F7F5F0] border border-[#ECE7DC] shadow-sm flex flex-col"
+                className="group rounded-2xl overflow-hidden bg-[#F7F5F0] border border-[#ECE7DC] shadow-sm flex flex-col cursor-pointer"
+                onClick={() => setSelectedGalleryItem(item)}
               >
                 <div className="relative h-64 overflow-hidden">
                   <img
@@ -563,7 +901,10 @@ export function ClassicNailArtPage() {
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   <button
-                    onClick={() => toggleLike(item.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleLike(item.id);
+                    }}
                     className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center text-rose-500 shadow-sm"
                     aria-label="Like photo"
                   >
@@ -575,15 +916,9 @@ export function ClassicNailArtPage() {
                     <span className="text-[10px] uppercase font-bold text-[#777777]">{item.category}</span>
                     <h4 className="text-xs font-bold text-[#1C1917]">{item.title}</h4>
                   </div>
-                  <button
-                    onClick={() => {
-                      setFormData(prev => ({ ...prev, notes: `Inquiry for gallery style: ${item.title}` }));
-                      setBookingOpen(true);
-                    }}
-                    className="text-xs text-[#5C3D75] font-semibold hover:underline"
-                  >
-                    Request Look
-                  </button>
+                  <span className="text-xs text-[#5C3D75] font-semibold flex items-center gap-1 group-hover:underline">
+                    View Look <ChevronRight className="w-3 h-3" />
+                  </span>
                 </div>
               </div>
             ))}
@@ -592,8 +927,56 @@ export function ClassicNailArtPage() {
         </div>
       </section>
 
-      {/* 7. CLIENT TESTIMONIALS */}
-      <section id="testimonials" className="py-16 md:py-24 bg-[#FAF9F6] border-t border-[#EAE5DA]">
+      {/* 8. FREQUENTLY ASKED QUESTIONS (Accordion) */}
+      <section id="faq" className="py-16 md:py-24 bg-[#FAF9F6] border-t border-[#EAE5DA]">
+        <div className="max-w-4xl mx-auto px-4 sm:px-8">
+          
+          <div className="text-center max-w-xl mx-auto mb-12 space-y-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#5C3D75]/10 text-[#5C3D75] text-xs font-bold">
+              <HelpCircle className="w-3.5 h-3.5" />
+              <span>Got Questions?</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-serif font-bold text-[#1C1917]">
+              Frequently Asked Questions
+            </h2>
+            <p className="text-xs sm:text-sm text-[#666666]">
+              Everything you need to know before your appointment at Classic Nail Art.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            {faqs.map((faq, index) => {
+              const isOpen = openFaq === index;
+              return (
+                <div
+                  key={index}
+                  className="bg-white rounded-2xl border border-[#EAE5DA] overflow-hidden transition-all shadow-xs"
+                >
+                  <button
+                    onClick={() => setOpenFaq(isOpen ? null : index)}
+                    className="w-full p-5 text-left flex items-center justify-between gap-4 hover:bg-[#FAF9F6] transition-colors"
+                  >
+                    <span className="font-serif text-sm sm:text-base font-bold text-[#1C1917]">
+                      {faq.q}
+                    </span>
+                    <ChevronDown className={`w-4 h-4 text-[#5C3D75] shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {isOpen && (
+                    <div className="px-5 pb-5 text-xs sm:text-sm text-[#555555] leading-relaxed border-t border-[#F2ECE2] pt-3 animate-in fade-in duration-150">
+                      {faq.a}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+        </div>
+      </section>
+
+      {/* 9. CLIENT TESTIMONIALS */}
+      <section id="testimonials" className="py-16 md:py-24 bg-white border-t border-[#EAE5DA]">
         <div className="max-w-6xl mx-auto px-4 sm:px-8">
           
           <div className="text-center max-w-xl mx-auto mb-12 space-y-2">
@@ -608,7 +991,7 @@ export function ClassicNailArtPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {reviews.map((rev, idx) => (
-              <div key={idx} className="bg-white p-6 rounded-2xl border border-[#EAE5DA] shadow-sm flex flex-col justify-between space-y-4">
+              <div key={idx} className="bg-[#FAF9F6] p-6 rounded-2xl border border-[#EAE5DA] shadow-xs flex flex-col justify-between space-y-4">
                 <div className="space-y-3">
                   <div className="flex text-amber-500">
                     {[...Array(5)].map((_, i) => (
@@ -630,8 +1013,8 @@ export function ClassicNailArtPage() {
         </div>
       </section>
 
-      {/* 8. CONTACT & LOCATION SECTION */}
-      <section id="contact" className="py-16 md:py-24 bg-white border-t border-[#EAE5DA]">
+      {/* 10. CONTACT & LOCATION SECTION */}
+      <section id="contact" className="py-16 md:py-24 bg-[#FAF9F6] border-t border-[#EAE5DA]">
         <div className="max-w-6xl mx-auto px-4 sm:px-8">
           
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
@@ -678,7 +1061,7 @@ export function ClassicNailArtPage() {
                 </div>
               </div>
 
-              <div className="pt-2 flex gap-3">
+              <div className="pt-2 flex flex-wrap gap-3">
                 <a
                   href="https://wa.me/9779846000000"
                   target="_blank"
@@ -688,13 +1071,23 @@ export function ClassicNailArtPage() {
                   <MessageCircle className="w-4 h-4" />
                   Chat on WhatsApp
                 </a>
+                <button
+                  onClick={() => {
+                    navigator.clipboard?.writeText('Lakeside Road, Street No. 6, Pokhara, Nepal');
+                    showToast('Studio address copied to clipboard!');
+                  }}
+                  className="inline-flex items-center gap-1.5 bg-white border border-[#DCD6C9] hover:bg-[#F2EFE8] text-gray-700 text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  Copy Address
+                </button>
               </div>
             </div>
 
             {/* Quick Contact Form */}
-            <div className="lg:col-span-7 bg-[#FAF9F6] p-6 sm:p-8 rounded-2xl border border-[#EAE5DA]">
+            <div className="lg:col-span-7 bg-white p-6 sm:p-8 rounded-2xl border border-[#EAE5DA]">
               <h3 className="font-serif text-xl font-bold text-[#1C1917] mb-4">Send a Message</h3>
-              <form onSubmit={(e) => { e.preventDefault(); alert('Thank you! We will get back to you shortly.'); }} className="space-y-3.5 text-xs">
+              <form onSubmit={(e) => { e.preventDefault(); showToast('Thank you! We will reply to your message shortly.'); }} className="space-y-3.5 text-xs">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <div>
                     <label className="block text-[#444444] font-semibold mb-1">Your Name</label>
@@ -702,7 +1095,7 @@ export function ClassicNailArtPage() {
                       type="text"
                       required
                       placeholder="e.g. Maya Shrestha"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#DCD6C9] bg-white focus:outline-none focus:border-[#5C3D75]"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#DCD6C9] bg-[#FAF9F6] focus:outline-none focus:border-[#5C3D75]"
                     />
                   </div>
                   <div>
@@ -711,7 +1104,7 @@ export function ClassicNailArtPage() {
                       type="tel"
                       required
                       placeholder="+977 98..."
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#DCD6C9] bg-white focus:outline-none focus:border-[#5C3D75]"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#DCD6C9] bg-[#FAF9F6] focus:outline-none focus:border-[#5C3D75]"
                     />
                   </div>
                 </div>
@@ -722,7 +1115,7 @@ export function ClassicNailArtPage() {
                     rows={3}
                     required
                     placeholder="Tell us what style or question you have..."
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#DCD6C9] bg-white focus:outline-none focus:border-[#5C3D75]"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#DCD6C9] bg-[#FAF9F6] focus:outline-none focus:border-[#5C3D75]"
                   />
                 </div>
 
@@ -740,7 +1133,7 @@ export function ClassicNailArtPage() {
         </div>
       </section>
 
-      {/* 9. FOOTER */}
+      {/* 11. FOOTER */}
       <footer className="bg-[#1C1917] text-[#999999] text-xs py-12 px-4 sm:px-8">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2 text-white font-serif text-lg font-bold">
@@ -751,8 +1144,10 @@ export function ClassicNailArtPage() {
           <div className="flex items-center space-x-6 text-[#CCCCCC]">
             <a href="#home" className="hover:text-white transition-colors">Home</a>
             <a href="#services" className="hover:text-white transition-colors">Services</a>
+            <a href="#customizer" className="hover:text-white transition-colors">Customizer</a>
             <a href="#about" className="hover:text-white transition-colors">About</a>
-            <a href="#gallery" className="hover:text-white transition-colors">Gallery</a>
+            <a href="#gallery" className="hover:text-white transition-colors">Lookbook</a>
+            <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
             <a href="#contact" className="hover:text-white transition-colors">Contact</a>
           </div>
 
@@ -762,7 +1157,67 @@ export function ClassicNailArtPage() {
         </div>
       </footer>
 
-      {/* 10. CLEAN APPOINTMENT BOOKING MODAL */}
+      {/* 12. GALLERY LOOK DETAIL MODAL */}
+      {selectedGalleryItem && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl relative animate-in fade-in duration-150">
+            <button
+              onClick={() => setSelectedGalleryItem(null)}
+              className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-white/90 text-gray-700 hover:text-black flex items-center justify-center shadow"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="relative h-64 bg-gray-100">
+              <img
+                src={selectedGalleryItem.image}
+                alt={selectedGalleryItem.title}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute top-4 left-4 bg-[#5C3D75] text-white text-[10px] uppercase font-bold px-2.5 py-1 rounded-full">
+                {selectedGalleryItem.category}
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4 text-xs">
+              <div>
+                <h3 className="font-serif text-xl font-bold text-[#1C1917]">{selectedGalleryItem.title}</h3>
+                <p className="text-[#555555] mt-1 leading-relaxed">{selectedGalleryItem.details}</p>
+              </div>
+
+              <div className="bg-[#FAF9F6] p-4 rounded-xl border border-[#EAE5DA] space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-500 font-semibold">Products:</span>
+                  <span className="text-gray-900 font-medium text-right max-w-xs">{selectedGalleryItem.productsUsed}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500 font-semibold">Duration:</span>
+                  <span className="text-gray-900 font-medium">{selectedGalleryItem.timeEstimate}</span>
+                </div>
+                <div className="flex justify-between border-t border-[#ECE7DC] pt-2">
+                  <span className="text-[#5C3D75] font-bold">Estimated Cost:</span>
+                  <span className="text-[#1C1917] font-bold text-sm">{selectedGalleryItem.priceEstimate}</span>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => {
+                    setFormData(prev => ({ ...prev, notes: `Booked from Lookbook: ${selectedGalleryItem.title}` }));
+                    setSelectedGalleryItem(null);
+                    setBookingOpen(true);
+                  }}
+                  className="flex-1 bg-[#5C3D75] hover:bg-[#482F5E] text-white py-3 rounded-xl font-semibold uppercase tracking-wider"
+                >
+                  Book This Look
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 13. APPOINTMENT BOOKING MODAL */}
       {bookingOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 sm:p-7 shadow-xl relative animate-in fade-in duration-150 text-xs">
